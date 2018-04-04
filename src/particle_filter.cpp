@@ -26,7 +26,7 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
 	//   x, y, theta and their uncertainties from GPS) and all weights to 1. 
 	// Add random Gaussian noise to each particle.
 	// NOTE: Consult particle_filter.h for more information about this method (and others in this file).
-	num_particles=20;
+	num_particles=30;
 	normal_distribution<double> dist_x(x, std[0]);
 	normal_distribution<double> dist_y(y, std[1]);
 	normal_distribution<double> dist_theta(theta, std[2]);
@@ -97,7 +97,7 @@ void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::ve
     
     int closest_landmark_id = -1;
     
-    for (unsigned int j = 0; j < predicted.size(); j++) {
+    for (int j = 0; j < predicted.size(); j++) {
       // grab current prediction
       LandmarkObs pred = predicted[j];
       
@@ -171,15 +171,19 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
     // perform dataAssociation for the predictions and transformed observations on current particle
     dataAssociation(predictions, transformed_obs);
 
-    // reinitialize weight
+    // reinitialize weight,by default it's zero, which could have resulted in error
     particles[i].weight = 1.0;
+
+	//# calculate normalization term
+	double gauss_norm= 1/(2 * M_PI * std_landmark[0] * std_landmark[1]);
+	double exponent;
 
     for (int j = 0; j < transformed_obs.size(); j++) {
       
       // placeholders for observation and associated prediction coordinates
-      double o_x, o_y, pr_x, pr_y;
-      o_x = transformed_obs[j].x;
-      o_y = transformed_obs[j].y;
+      double ob_x, ob_y, pr_x, pr_y;
+      ob_x = transformed_obs[j].x;
+      ob_y = transformed_obs[j].y;
 
       int associated_prediction = transformed_obs[j].id;
 
@@ -192,10 +196,11 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
       }
 
       // calculate weight for this observation with multivariate Gaussian
-      double s_x = std_landmark[0];
-      double s_y = std_landmark[1];
-      double obs_w = ( 1/(2*M_PI*s_x*s_y)) * exp( -( pow(pr_x-o_x,2)/(2*pow(s_x, 2)) + (pow(pr_y-o_y,2)/(2*pow(s_y, 2))) ) );
-
+      double std_x = std_landmark[0];
+      double std_y = std_landmark[1];
+	  exponent=pow(pr_x-ob_x,2)/(2*pow(std_x, 2)) + (pow(pr_y-ob_y,2)/(2*pow(std_y, 2)))
+      //double obs_w = (gauss_norm ) * exp( -( pow(pr_x-ob_x,2)/(2*pow(std_x, 2)) + (pow(pr_y-ob_y,2)/(2*pow(std_y, 2))) ) );
+	  double obs_w = (gauss_norm ) * exp( -(exponent))
       // product of this obersvation weight with total observations weight
       particles[i].weight *= obs_w;
     }
@@ -208,7 +213,7 @@ void ParticleFilter::resample() {
 	// TODO: Resample particles with replacement with probability proportional to their weight. 
 	// NOTE: You may find std::discrete_distribution helpful here.
 	//   http://en.cppreference.com/w/cpp/numeric/random/discrete_distribution
-	vector<Particle> new_particles;
+	vector<Particle> resampled_particles;
 
   // get all of the current weights
   vector<double> weights;
@@ -217,28 +222,36 @@ void ParticleFilter::resample() {
   }
 
   // generate random starting index for resampling wheel
-  uniform_int_distribution<int> uniintdist(0, num_particles-1);
-  auto index = uniintdist(gen);
+  uniform_int_distribution<int> intdist(0, num_particles-1);
+  int index = intdist(gen);
+
 
   // get max weight
-  double max_weight = *max_element(weights.begin(), weights.end());
+  double max_weight = numeric_limits<double>::min();
+	for(int i = 0; i < num_particles; i++) {
+			if(particles[i].weight > max_weight) {
+				max_weight = particles[i].weight;
+			}
+		}
+		//
+  //double max_weight = *max_element(weights.begin(), weights.end());
 
-  // uniform random distribution [0.0, max_weight)
-  uniform_real_distribution<double> unirealdist(0.0, max_weight);
+  
+  uniform_real_distribution<double> realdist(0.0, max_weight);
 
   double beta = 0.0;
 
-  // spin the resample wheel!
+  
   for (int i = 0; i < num_particles; i++) {
-    beta += unirealdist(gen) * 2.0;
+    beta += realdist(gen) * 2.0;
     while (beta > weights[index]) {
       beta -= weights[index];
       index = (index + 1) % num_particles;
     }
-    new_particles.push_back(particles[index]);
+    resampled_particles.push_back(particles[index]);
   }
 
-  particles = new_particles;
+  particles = resampled_particles;
 
 }
 
