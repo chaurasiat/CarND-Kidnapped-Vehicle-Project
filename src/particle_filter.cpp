@@ -226,15 +226,15 @@ void ParticleFilter::resample() {
   int index = intdist(gen);
 
 
-  // get max weight
-  double max_weight = numeric_limits<double>::min();
-	for(int i = 0; i < num_particles; i++) {
-			if(particles[i].weight > max_weight) {
-				max_weight = particles[i].weight;
-			}
-		}
-		//
-  //double max_weight = *max_element(weights.begin(), weights.end());
+//   // get max weight
+//   double max_weight = numeric_limits<double>::min();
+// 	for(int i = 0; i < num_particles; i++) {
+// 			if(particles[i].weight > max_weight) {
+// 				max_weight = particles[i].weight;
+// 			}
+// 		}
+// 		//
+  double max_weight = *max_element(weights.begin(), weights.end());
 
   
   uniform_real_distribution<double> realdist(0.0, max_weight);
