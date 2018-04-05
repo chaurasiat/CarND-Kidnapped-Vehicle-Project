@@ -73,7 +73,7 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
       particles[i].theta += yaw_rate * delta_t;
     }
 
-    // add noise
+    // adding noise
     particles[i].x += dist_x(gen);
     particles[i].y += dist_y(gen);
     particles[i].theta += dist_theta(gen);
@@ -95,7 +95,7 @@ void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::ve
     double min_dist = numeric_limits<double>::max();
 
     
-    int closest_landmark_id = -1;
+    int nearest_landmark_id = -1;
     
     for (int j = 0; j < predicted.size(); j++) {
       // grab current prediction
@@ -107,12 +107,12 @@ void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::ve
       // find the predicted landmark nearest the current observed landmark
       if (cur_dist < min_dist) {
         min_dist = cur_dist;
-        closest_landmark_id = pred.id;
+        nearest_landmark_id = pred.id;
       }
     }
 
     // set the observation's id to the nearest predicted landmark's id
-    observations[i].id = closest_landmark_id;
+    observations[i].id = nearest_landmark_id;
   }
 	
 	
@@ -145,16 +145,18 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
     for (int j = 0; j < map_landmarks.landmark_list.size(); j++) {
 
       // get id and x,y coordinates
-      float landmrk_x = map_landmarks.landmark_list[j].x_f;
-      float landmrk_y = map_landmarks.landmark_list[j].y_f;
-      int landmrk_id = map_landmarks.landmark_list[j].id_i;
+	   LandmarkObs landmrkobj;
+      
+	   landmrkobj.id=map_landmarks.landmark_list[j].id_i;
+      landmrkobj.x = map_landmarks.landmark_list[j].x_f;
+      landmrkobj.y=map_landmarks.landmark_list[j].y_f;
       
       // only consider landmarks within sensor range of the particle (rather than using the "dist" method considering a circular 
       // region around the particle, this considers a rectangular region but is computationally faster)
       if (fabs(landmrk_x - particle_x) <= sensor_range && fabs(landmrk_y - particle_y) <= sensor_range) {
-
+		  
         // add prediction to vector
-        predictions.push_back(LandmarkObs{ landmrk_id, landmrk_x, landmrk_y });
+        predictions.push_back(landmrkobj);
       }
     }
 
