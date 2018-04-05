@@ -153,7 +153,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
       
       // only consider landmarks within sensor range of the particle (rather than using the "dist" method considering a circular 
       // region around the particle, this considers a rectangular region but is computationally faster)
-      if (fabs(landmrkobj.x - particle_x) <= sensor_range && fabs(landmrkobj - particle_y) <= sensor_range) {
+      if (fabs(landmrkobj.x - particle_x) <= sensor_range && fabs(landmrkobj.y - particle_y) <= sensor_range) {
 		  
         // add prediction to vector
         predictions.push_back(landmrkobj);
